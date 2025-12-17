@@ -50,9 +50,9 @@ uvx osim-mcp-server
 ### 从源码运行
 
 ```bash
-# 克隆仓库（请替换为实际的仓库地址）
-git clone <repository-url>
-cd osim-mcp-server-fastmcp
+# 克隆仓库
+git clone https://github.com/osim-group/osim-mcp-server.git
+cd osim-mcp-server
 
 # 首先获取 schemas（必需）
 # 确保已安装 git
