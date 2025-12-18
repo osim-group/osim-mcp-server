@@ -44,6 +44,18 @@ class DataStandardLoader:
         
         self.loaded = False
     
+    def reload(self) -> None:
+        """
+        重新加载所有 schema 文件。
+        用于 schemas 更新后刷新内存中的数据。
+        """
+        logger.info("重新加载 schemas...")
+        self.schema_files = {}
+        self.data = {}
+        self.loaded = False
+        self.load_all()
+        logger.info(f"重新加载完成，共 {len(self.schema_files)} 个 schema")
+    
     def load_all(self) -> None:
         """
         加载所有 JSON schema 文件。
