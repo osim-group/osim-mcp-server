@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 # 远程版本号文件 URL
 REMOTE_VERSION_URL = "https://raw.githubusercontent.com/osim-group/osim-schema/main/version.json"
 
-# 本地版本号文件路径（与 schemas 目录同级）
-LOCAL_VERSION_FILE = Path(__file__).parent / "schemas" / "version.json"
+# 本地版本号文件路径（osim-schema 根目录下的 version.json）
+LOCAL_VERSION_FILE = Path(__file__).parent / "osim-schema" / "version.json"
 
 
 @dataclass
@@ -115,7 +115,7 @@ class VersionManager:
         初始化版本管理器
         
         Args:
-            local_version_file: 本地版本号文件路径，默认为 schemas/version.json
+            local_version_file: 本地版本号文件路径，默认为 osim-schema/version.json
         """
         self.local_version_file = local_version_file or LOCAL_VERSION_FILE
         self.remote_version_url = REMOTE_VERSION_URL

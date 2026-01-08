@@ -1,6 +1,6 @@
 [project]
 name = "osim-mcp-server"
-version = "1.0.3"
+version = "1.0.5"
 description = "OSIM MCP Server based on FastMCP"
 authors = [{name = "Delin", email = "zdl0929@gmail.com"}]
 readme = "README.md"
@@ -35,6 +35,6 @@ include = [
     "loader.py",
     "version_manager.py",
     "update_schemas.py",
-    "schemas",
+    "osim-schema",
 ]
 

@@ -115,13 +115,16 @@ def schedule_update_check():
 
 
 @mcp.tool()
-def list_schema_names() -> List[str]:
+def list_schema_names(**kwargs) -> List[str]:
     """
     列出所有可用的数据标准 schema 名称。
     
     返回名称列表，格式为 {group}.{category}.{title}（例如：log.network_session_audit.http_audit）。
     为了避免上下文过长，此工具只返回名称，不包含描述信息。
     如需获取描述，请使用 describe_schemas 工具。
+    
+    Args:
+        **kwargs: 接受额外的关键字参数（如 task_id 等），会被忽略
     
     Returns:
         List[str]: schema 名称列表，格式为 {group}.{category}.{title}
@@ -136,7 +139,7 @@ def list_schema_names() -> List[str]:
 
 
 @mcp.tool()
-def describe_schemas(schema_names: List[str]) -> Dict[str, str]:
+def describe_schemas(schema_names: List[str], **kwargs) -> Dict[str, str]:
     """
     获取指定 schema 名称列表的描述信息。
     
@@ -146,6 +149,7 @@ def describe_schemas(schema_names: List[str]) -> Dict[str, str]:
     
     Args:
         schema_names: schema 名称列表，格式为 {group}.{category}.{title}
+        **kwargs: 接受额外的关键字参数（如 task_id 等），会被忽略
     
     Returns:
         Dict[str, str]: 字典，键为 schema 名称，值为描述信息
@@ -160,7 +164,7 @@ def describe_schemas(schema_names: List[str]) -> Dict[str, str]:
 
 
 @mcp.tool()
-def get_schema(schema_path: str) -> Dict[str, Any]:
+def get_schema(schema_path: str, **kwargs) -> Dict[str, Any]:
     """
     获取指定 schema 的字段定义。
     
@@ -170,6 +174,7 @@ def get_schema(schema_path: str) -> Dict[str, Any]:
     
     Args:
         schema_path: schema 路径，格式为 {group}.{category}.{title}
+        **kwargs: 接受额外的关键字参数（如 task_id 等），会被忽略
     
     Returns:
         Dict[str, Any]: 字段定义字典，包含字段名、标签、类型、要求、描述等信息
@@ -187,11 +192,14 @@ def get_schema(schema_path: str) -> Dict[str, Any]:
 
 
 @mcp.tool()
-def get_schema_version() -> Dict[str, Any]:
+def get_schema_version(**kwargs) -> Dict[str, Any]:
     """
     获取当前 schemas 的版本信息。
     
     返回包含本地版本号和更新状态的字典。
+    
+    Args:
+        **kwargs: 接受额外的关键字参数（如 task_id 等），会被忽略
     
     Returns:
         Dict[str, Any]: 包含 version（版本号）和 auto_update_enabled（是否启用自动更新）的字典
@@ -214,6 +222,29 @@ def get_schema_version() -> Dict[str, Any]:
             "auto_update_enabled": AUTO_UPDATE_ENABLED,
             "error": str(e)
         }
+
+
+@mcp.tool()
+def get_dictionaries(**kwargs) -> Dict[str, Any]:
+    """
+    获取 dictionaries.json 文件内容。
+    
+    返回 OSIM 数据标准中定义的字典项，包含字段名、标签、描述、类型等信息。
+    这些字典项定义了数据标准中使用的通用字段定义。
+    
+    Args:
+        **kwargs: 接受额外的关键字参数（如 task_id 等），会被忽略
+    
+    Returns:
+        Dict[str, Any]: dictionaries.json 的完整内容，如果读取失败则返回包含错误信息的字典
+    """
+    try:
+        dictionaries = loader.get_dictionaries()
+        logger.info("获取 dictionaries.json 内容")
+        return dictionaries
+    except Exception as e:
+        logger.error(f"获取 dictionaries.json 失败: {e}", exc_info=True)
+        return {"error": f"获取 dictionaries.json 失败: {str(e)}"}
 
 
 # 注册资源处理器

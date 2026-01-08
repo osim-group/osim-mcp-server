@@ -1,6 +1,6 @@
 include README.md
 include LICENSE
 include pyproject.toml
-recursive-include schemas *.json
-recursive-include schemas *.md
+recursive-include osim-schema *.json
+recursive-include osim-schema *.md
 

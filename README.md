@@ -54,7 +54,7 @@ uvx osim-mcp-server
 git clone https://github.com/osim-group/osim-mcp-server.git
 cd osim-mcp-server
 
-# 首先获取 schemas（必需）
+# 首先获取 osim-schema（必需）
 # 确保已安装 git
 python update_schemas.py
 
@@ -63,11 +63,11 @@ uv sync
 uv run python server.py
 ```
 
-> **重要**：仓库本身不包含 schemas 目录，需要先运行 `update_schemas.py` 获取 schemas 文件才能正常运行。
+> **重要**：仓库本身不包含 osim-schema 目录，需要先运行 `update_schemas.py` 获取 osim-schema 仓库内容才能正常运行。
 
-### 更新 Schemas
+### 更新 OSIM Schema
 
-项目中的 schemas 文件来源于 [OSIM Schema 仓库](https://github.com/osim-group/osim-schema/tree/main/schemas)。如果需要获取或更新最新的 schemas，可以使用项目提供的更新脚本：
+项目中的 osim-schema 内容来源于 [OSIM Schema 仓库](https://github.com/osim-group/osim-schema)。如果需要获取或更新最新的内容，可以使用项目提供的更新脚本：
 
 ```bash
 # 确保已安装 git
@@ -75,9 +75,9 @@ python update_schemas.py
 ```
 
 脚本会自动：
-- 从 GitHub 仓库克隆最新的 schemas
-- 备份现有的 schemas（如果存在）
-- 更新本地 schemas 目录
+- 从 GitHub 仓库克隆整个 osim-schema 仓库（包括 schemas、faqs、examples 等）
+- 备份现有的 osim-schema 目录（如果存在）
+- 更新本地 osim-schema 目录
 - 验证更新结果
 
 > **注意**：更新脚本需要系统已安装 git 命令。
@@ -122,20 +122,20 @@ python update_schemas.py
 
 ## 🛠️ 开发
 
-### 获取/更新 Schemas
+### 获取/更新 OSIM Schema
 
-项目提供了脚本用于从 GitHub 仓库同步最新的 schemas：
+项目提供了脚本用于从 GitHub 仓库同步整个 osim-schema 仓库：
 
 ```bash
 python update_schemas.py
 ```
 
-> **注意**：构建分发包前需要先获取 schemas，因为分发包需要包含 schemas 文件。
+> **注意**：构建分发包前需要先获取 osim-schema，因为分发包需要包含 osim-schema 目录。
 
 ### 构建分发包
 
 ```bash
-# 确保已获取 schemas
+# 确保已获取 osim-schema
 python update_schemas.py
 
 # 构建分发包

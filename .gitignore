@@ -80,6 +80,6 @@ logs/
 *.swp
 *~
 
-# Schemas (从外部仓库获取，不提交到源码仓库)
-schemas/
-schemas.backup/
+# OSIM Schema (从外部仓库获取，不提交到源码仓库)
+osim-schema/
+osim-schema.backup/

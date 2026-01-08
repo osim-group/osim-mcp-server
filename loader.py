@@ -4,7 +4,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
@@ -28,11 +28,11 @@ class DataStandardLoader:
         初始化数据标准加载器
         
         Args:
-            schemas_dir: schemas 目录路径，默认为当前目录下的 schemas 目录
+            schemas_dir: schemas 目录路径，默认为 osim-schema/schemas 目录
         """
         if schemas_dir is None:
-            # 默认使用相对于当前文件的 schemas 目录
-            self.schemas_dir = Path(__file__).parent / "schemas"
+            # 默认使用 osim-schema/schemas 目录
+            self.schemas_dir = Path(__file__).parent / "osim-schema" / "schemas"
         else:
             self.schemas_dir = Path(schemas_dir)
         
@@ -293,5 +293,31 @@ class DataStandardLoader:
             logger.error(f"读取文件失败: {e}", exc_info=True)
             error_msg = json.dumps({"error": f"读取文件失败: {str(e)}"}, ensure_ascii=False)
             return error_msg
+    
+    def get_dictionaries(self) -> Dict[str, Any]:
+        """
+        获取 dictionaries.json 文件内容。
+        
+        Returns:
+            字典内容，如果文件不存在或读取失败则返回包含错误信息的字典
+        """
+        # dictionaries.json 位于 osim-schema 根目录
+        dictionaries_file = Path(__file__).parent / "osim-schema" / "dictionaries.json"
+        
+        if not dictionaries_file.exists():
+            logger.warning(f"dictionaries.json 文件不存在: {dictionaries_file}")
+            return {"error": f"dictionaries.json 文件不存在: {dictionaries_file}"}
+        
+        try:
+            with open(dictionaries_file, 'r', encoding='utf-8') as f:
+                content = json.load(f)
+            logger.info(f"成功读取 dictionaries.json，包含 {len(content)} 个字典项")
+            return content
+        except json.JSONDecodeError as e:
+            logger.error(f"dictionaries.json JSON 格式错误: {e}", exc_info=True)
+            return {"error": f"dictionaries.json JSON 格式错误: {str(e)}"}
+        except Exception as e:
+            logger.error(f"读取 dictionaries.json 失败: {e}", exc_info=True)
+            return {"error": f"读取 dictionaries.json 失败: {str(e)}"}
 
 

@@ -28,11 +28,10 @@ logger = logging.getLogger(__name__)
 # GitHub 仓库配置
 SCHEMA_REPO = "osim-group/osim-schema"
 SCHEMA_BRANCH = "main"
-SCHEMA_PATH = "schemas"
 SCHEMA_REPO_URL = f"https://github.com/{SCHEMA_REPO}.git"
 
-# 本地 schemas 目录
-LOCAL_SCHEMAS_DIR = Path(__file__).parent / "schemas"
+# 本地 osim-schema 目录（整个仓库）
+LOCAL_OSIM_SCHEMA_DIR = Path(__file__).parent / "osim-schema"
 
 
 def check_git_available() -> bool:
@@ -48,8 +47,8 @@ def check_git_available() -> bool:
         return False
 
 
-def clone_schemas_to_temp() -> Optional[Path]:
-    """克隆仓库到临时目录并返回 schemas 路径"""
+def clone_repo_to_temp() -> Optional[Path]:
+    """克隆整个仓库到临时目录并返回仓库根目录路径"""
     temp_dir = tempfile.mkdtemp(prefix="osim-schema-")
     repo_dir = Path(temp_dir) / "osim-schema"
     
@@ -62,12 +61,20 @@ def clone_schemas_to_temp() -> Optional[Path]:
             text=True
         )
         
-        schemas_path = repo_dir / SCHEMA_PATH
-        if not schemas_path.exists():
-            logger.error(f"仓库中找不到 schemas 目录: {schemas_path}")
+        if not repo_dir.exists():
+            logger.error(f"克隆后的仓库目录不存在: {repo_dir}")
             return None
         
-        return schemas_path
+        # 验证关键目录和文件是否存在
+        schemas_path = repo_dir / "schemas"
+        version_file = repo_dir / "version.json"
+        
+        if not schemas_path.exists():
+            logger.warning(f"仓库中找不到 schemas 目录: {schemas_path}")
+        if not version_file.exists():
+            logger.warning(f"仓库中找不到 version.json 文件: {version_file}")
+        
+        return repo_dir
     except subprocess.CalledProcessError as e:
         logger.error(f"克隆仓库失败: {e}")
         if e.stdout:
@@ -80,84 +87,107 @@ def clone_schemas_to_temp() -> Optional[Path]:
         return None
 
 
-def backup_existing_schemas() -> Optional[Path]:
-    """备份现有的 schemas 目录"""
-    if not LOCAL_SCHEMAS_DIR.exists():
+def backup_existing_repo() -> Optional[Path]:
+    """备份现有的 osim-schema 目录"""
+    if not LOCAL_OSIM_SCHEMA_DIR.exists():
         return None
     
-    backup_dir = LOCAL_SCHEMAS_DIR.parent / f"schemas.backup"
+    backup_dir = LOCAL_OSIM_SCHEMA_DIR.parent / f"osim-schema.backup"
     if backup_dir.exists():
         shutil.rmtree(backup_dir)
     
-    logger.info(f"备份现有 schemas 到 {backup_dir}...")
-    shutil.copytree(LOCAL_SCHEMAS_DIR, backup_dir)
+    logger.info(f"备份现有 osim-schema 到 {backup_dir}...")
+    shutil.copytree(LOCAL_OSIM_SCHEMA_DIR, backup_dir)
     return backup_dir
 
 
-def update_schemas(source_schemas: Path, new_version: Optional[str] = None) -> bool:
+def update_schemas(source_repo: Path, new_version: Optional[str] = None) -> bool:
     """
-    更新本地 schemas 目录
+    更新本地 osim-schema 目录（整个仓库）
     
     Args:
-        source_schemas: 源 schemas 目录路径
+        source_repo: 源仓库根目录路径
         new_version: 新版本号，如果提供则保存到本地版本文件
     
     Returns:
         是否更新成功
     """
+    backup_dir = None
     try:
-        # 备份现有 schemas
-        backup_dir = backup_existing_schemas()
+        # 备份现有 osim-schema 目录
+        backup_dir = backup_existing_repo()
         
-        # 删除现有 schemas 目录
-        if LOCAL_SCHEMAS_DIR.exists():
-            logger.info(f"删除现有 schemas 目录: {LOCAL_SCHEMAS_DIR}")
-            shutil.rmtree(LOCAL_SCHEMAS_DIR)
+        # 删除现有 osim-schema 目录
+        if LOCAL_OSIM_SCHEMA_DIR.exists():
+            logger.info(f"删除现有 osim-schema 目录: {LOCAL_OSIM_SCHEMA_DIR}")
+            shutil.rmtree(LOCAL_OSIM_SCHEMA_DIR)
         
-        # 复制新的 schemas
-        logger.info(f"复制新的 schemas 从 {source_schemas} 到 {LOCAL_SCHEMAS_DIR}...")
-        shutil.copytree(source_schemas, LOCAL_SCHEMAS_DIR)
+        # 复制整个仓库
+        logger.info(f"复制新的 osim-schema 从 {source_repo} 到 {LOCAL_OSIM_SCHEMA_DIR}...")
+        shutil.copytree(source_repo, LOCAL_OSIM_SCHEMA_DIR)
         
-        # 保存版本号
+        # 保存版本号（如果提供了新版本号，否则从复制的 version.json 中读取）
         if new_version:
             from version_manager import VersionManager
             version_manager = VersionManager()
             version_manager.save_local_version(new_version)
+        else:
+            # 尝试从复制的 version.json 中读取版本号
+            version_file = LOCAL_OSIM_SCHEMA_DIR / "version.json"
+            if version_file.exists():
+                try:
+                    with open(version_file, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        version = data.get("version")
+                        if version:
+                            from version_manager import VersionManager
+                            version_manager = VersionManager()
+                            version_manager.save_local_version(version)
+                except Exception as e:
+                    logger.warning(f"无法从 version.json 读取版本号: {e}")
         
         # 删除备份（如果更新成功）
         if backup_dir and backup_dir.exists():
             logger.info(f"删除备份目录: {backup_dir}")
             shutil.rmtree(backup_dir)
         
-        logger.info("Schemas 更新成功！")
+        logger.info("OSIM Schema 更新成功！")
         return True
     except Exception as e:
-        logger.error(f"更新 schemas 失败: {e}", exc_info=True)
+        logger.error(f"更新 osim-schema 失败: {e}", exc_info=True)
         # 尝试恢复备份
-        if backup_dir and backup_dir.exists() and not LOCAL_SCHEMAS_DIR.exists():
+        if backup_dir and backup_dir.exists() and not LOCAL_OSIM_SCHEMA_DIR.exists():
             logger.info("尝试恢复备份...")
-            shutil.copytree(backup_dir, LOCAL_SCHEMAS_DIR)
+            shutil.copytree(backup_dir, LOCAL_OSIM_SCHEMA_DIR)
         return False
 
 
 def verify_schemas() -> bool:
-    """验证 schemas 目录是否有效"""
-    if not LOCAL_SCHEMAS_DIR.exists():
-        logger.error(f"Schemas 目录不存在: {LOCAL_SCHEMAS_DIR}")
+    """验证 osim-schema 目录是否有效"""
+    if not LOCAL_OSIM_SCHEMA_DIR.exists():
+        logger.error(f"OSIM Schema 目录不存在: {LOCAL_OSIM_SCHEMA_DIR}")
+        return False
+    
+    # 检查 schemas 目录是否存在
+    schemas_dir = LOCAL_OSIM_SCHEMA_DIR / "schemas"
+    if not schemas_dir.exists():
+        logger.error(f"Schemas 目录不存在: {schemas_dir}")
         return False
     
     # 检查是否有 JSON 文件
-    json_files = list(LOCAL_SCHEMAS_DIR.rglob("*.json"))
+    json_files = list(schemas_dir.rglob("*.json"))
     if not json_files:
         logger.error("Schemas 目录中没有找到 JSON 文件")
         return False
     
     logger.info(f"找到 {len(json_files)} 个 JSON 文件")
     
-    # 检查是否有 groups.json
-    groups_file = LOCAL_SCHEMAS_DIR / "groups.json"
-    if not groups_file.exists():
-        logger.warning("未找到 groups.json 文件")
+    # 检查 version.json 是否存在
+    version_file = LOCAL_OSIM_SCHEMA_DIR / "version.json"
+    if not version_file.exists():
+        logger.warning("未找到 version.json 文件")
+    else:
+        logger.info(f"找到 version.json: {version_file}")
     
     return True
 
@@ -207,35 +237,35 @@ def do_update(force: bool = False, on_complete: Optional[Callable[[bool], None]]
         return False
     
     # 克隆仓库到临时目录
-    source_schemas = clone_schemas_to_temp()
-    if source_schemas is None:
-        logger.error("无法获取 schemas，更新失败")
+    source_repo = clone_repo_to_temp()
+    if source_repo is None:
+        logger.error("无法获取 osim-schema 仓库，更新失败")
         if on_complete:
             on_complete(False)
         return False
     
     try:
-        # 更新本地 schemas
-        if not update_schemas(source_schemas, new_version):
-            logger.error("更新 schemas 失败")
+        # 更新本地 osim-schema 目录
+        if not update_schemas(source_repo, new_version):
+            logger.error("更新 osim-schema 失败")
             if on_complete:
                 on_complete(False)
             return False
         
         # 验证更新结果
         if not verify_schemas():
-            logger.error("验证 schemas 失败")
+            logger.error("验证 osim-schema 失败")
             if on_complete:
                 on_complete(False)
             return False
         
-        logger.info("Schemas 更新完成！")
+        logger.info("OSIM Schema 更新完成！")
         if on_complete:
             on_complete(True)
         return True
     finally:
         # 清理临时目录
-        temp_dir = source_schemas.parent.parent
+        temp_dir = source_repo.parent
         if temp_dir.exists():
             logger.info(f"清理临时目录: {temp_dir}")
             shutil.rmtree(temp_dir)
@@ -269,11 +299,10 @@ def main():
     # 解析命令行参数
     force = "--force" in sys.argv or "-f" in sys.argv
     
-    logger.info("开始更新 OSIM schemas...")
+    logger.info("开始更新 OSIM Schema...")
     logger.info(f"仓库: {SCHEMA_REPO}")
     logger.info(f"分支: {SCHEMA_BRANCH}")
-    logger.info(f"路径: {SCHEMA_PATH}")
-    logger.info(f"目标目录: {LOCAL_SCHEMAS_DIR}")
+    logger.info(f"目标目录: {LOCAL_OSIM_SCHEMA_DIR}")
     if force:
         logger.info("模式: 强制更新")
     
