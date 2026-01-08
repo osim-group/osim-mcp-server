@@ -87,16 +87,32 @@ python update_schemas.py
 ### MCP 工具
 
 1. **`list_schema_names`** - 列出所有可用的数据标准 schema 名称
-   - 返回格式：`{group}.{category}.{title}`
-   - 示例：`log.network_session_audit.http_audit`
+   - 参数：无
+   - 返回：`List[str]` - schema 名称列表，格式为 `{group}.{category}.{title}`
+   - 示例：`["log.network_session_audit.http_audit", "alert.network_attack.apt_attack"]`
+   - 说明：为了避免上下文过长，此工具只返回名称，不包含描述信息
 
 2. **`describe_schemas`** - 获取指定 schema 的描述信息
-   - 参数：`schema_names` (List[str])
-   - 返回：字典，键为 schema 名称，值为描述信息
+   - 参数：`schema_names` (List[str]) - schema 名称列表
+   - 返回：`Dict[str, str]` - 字典，键为 schema 名称，值为描述信息
+   - 说明：方便理解应该使用哪个 schema
 
 3. **`get_schema`** - 获取指定 schema 的完整字段定义
-   - 参数：`schema_path` (str)，格式为 `{group}.{category}.{title}`
-   - 返回：字段定义字典，包含字段名、标签、类型、要求、描述等信息
+   - 参数：`schema_path` (str) - schema 路径，格式为 `{group}.{category}.{title}`
+   - 返回：`Dict[str, Any]` - 字段定义字典，包含字段名、标签、类型、要求、描述等信息
+   - 说明：可以从 `list_schema_names` 中获取所有可用的 schema 名称
+
+4. **`get_schema_version`** - 获取当前 schemas 的版本信息
+   - 参数：无
+   - 返回：`Dict[str, Any]` - 包含以下字段：
+     - `version` (str) - 本地版本号
+     - `auto_update_enabled` (bool) - 是否启用自动更新
+     - `update_timeout` (float) - 更新检查超时时间（秒）
+
+5. **`get_dictionaries`** - 获取 dictionaries.json 文件内容
+   - 参数：无
+   - 返回：`Dict[str, Any]` - OSIM 数据标准中定义的字典项
+   - 说明：包含字段名、标签、描述、类型等信息，这些字典项定义了数据标准中使用的通用字段定义
 
 ### MCP 资源
 
