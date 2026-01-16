@@ -1,6 +1,8 @@
 include README.md
 include LICENSE
 include pyproject.toml
-recursive-include osim-schema *.json
-recursive-include osim-schema *.md
+# 包含整个 osim-schema 目录（排除 .git 目录）
+recursive-include osim-schema *
+recursive-exclude osim-schema .git
+recursive-exclude osim-schema .git/**
 

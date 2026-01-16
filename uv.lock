@@ -1001,7 +1001,7 @@ wheels = [
 
 [[package]]
 name = "osim-mcp-server"
-version = "1.0.3"
+version = "1.0.6"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },

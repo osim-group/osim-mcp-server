@@ -1,6 +1,6 @@
 [project]
 name = "osim-mcp-server"
-version = "1.0.5"
+version = "1.0.6"
 description = "OSIM MCP Server based on FastMCP"
 authors = [{name = "Delin", email = "zdl0929@gmail.com"}]
 readme = "README.md"
@@ -30,11 +30,21 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["."]
+# 包含 Python 文件
 include = [
     "server.py",
     "loader.py",
     "version_manager.py",
     "update_schemas.py",
-    "osim-schema",
+]
+# 包含 osim-schema 目录（即使被 gitignore 忽略）
+# 使用 artifacts 来包含被 VCS 忽略的文件
+artifacts = [
+    "osim-schema/**",
+]
+# 同时配置 sdist 以确保源码包也包含
+[tool.hatch.build.targets.sdist]
+artifacts = [
+    "osim-schema/**",
 ]
 
