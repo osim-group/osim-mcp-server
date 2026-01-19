@@ -117,21 +117,25 @@ def schedule_update_check():
 
 
 @mcp.tool()
-def list_schema_names() -> List[str]:
+def list_schema_names() -> List[Dict[str, Any]]:
     """
     列出所有可用的数据标准 schema 名称。
     
-    返回名称列表，格式为 {group}.{category}.{title}（例如：log.network_session_audit.http_audit）。
-    为了避免上下文过长，此工具只返回名称，不包含描述信息。
+    返回对象列表，每个对象包含：
+    - title: schema 名称，格式为 {group}.{category}.{title}（例如：log.network_session_audit.http_audit）
+    - label: schema 的英文标签（来自 schema 文件）
+    - label_{locale}: schema 的各语言标签（动态生成，根据 i18n 目录下的文件自动生成）
+      例如：如果存在 zh_CN.json，则会有 label_zh_CN 字段；如果存在 en_US.json，则会有 label_en_US 字段
+    
     如需获取描述，请使用 describe_schemas 工具。
     
     Returns:
-        List[str]: schema 名称列表，格式为 {group}.{category}.{title}
+        List[Dict[str, Any]]: schema 信息列表，每个对象包含 title、label 和动态的 label_{locale} 字段
     """
     try:
-        names = loader.list_schema_names()
-        logger.info(f"列出 {len(names)} 个 schema 名称")
-        return names
+        schemas = loader.list_schema_names()
+        logger.info(f"列出 {len(schemas)} 个 schema 名称")
+        return schemas
     except Exception as e:
         logger.error(f"列出 schema 名称失败: {e}", exc_info=True)
         return []

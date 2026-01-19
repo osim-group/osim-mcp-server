@@ -17,6 +17,7 @@ class SchemaInfo:
     category: str
     title: str
     description: str
+    label: str
     file_path: Path
 
 
@@ -42,6 +43,10 @@ class DataStandardLoader:
         # 存储字段定义: {group: {title: definitions}}
         self.data: Dict[str, Dict[str, dict]] = {}
         
+        # 存储 i18n 翻译数据: {locale: i18n_data}
+        # 例如: {"zh_CN": {...}, "en_US": {...}}
+        self.i18n_data: Dict[str, Dict[str, Any]] = {}
+        
         self.loaded = False
     
     def reload(self) -> None:
@@ -52,6 +57,7 @@ class DataStandardLoader:
         logger.info("重新加载 schemas...")
         self.schema_files = {}
         self.data = {}
+        self.i18n_data = {}
         self.loaded = False
         self.load_all()
         logger.info(f"重新加载完成，共 {len(self.schema_files)} 个 schema")
@@ -158,11 +164,13 @@ class DataStandardLoader:
         # 存储 schema 文件信息
         type_path = f"data.{group}.{title}"
         description = content.get("description", "")
+        label = content.get("label", "")
         schema_info = SchemaInfo(
             group=group,
             category=category,
             title=title,
             description=description,
+            label=label,
             file_path=json_file
         )
         
@@ -173,19 +181,101 @@ class DataStandardLoader:
         
         logger.debug(f"加载JSON文件成功: {json_file} -> {type_path}")
     
-    def list_schema_names(self) -> List[str]:
+    def _load_i18n(self) -> None:
         """
-        获取所有 schema 的名称列表。
+        加载所有 i18n 翻译文件。
+        扫描 i18n 目录下的所有 JSON 文件，动态加载。
+        """
+        if self.i18n_data:
+            return
+        
+        # i18n 文件位于 osim-schema/i18n/ 目录
+        i18n_dir = Path(__file__).parent / "osim-schema" / "i18n"
+        
+        if not i18n_dir.exists():
+            logger.warning(f"i18n 目录不存在: {i18n_dir}")
+            return
+        
+        # 扫描所有 JSON 文件
+        for i18n_file in i18n_dir.glob("*.json"):
+            # 从文件名提取 locale（例如：zh_CN.json -> zh_CN）
+            locale = i18n_file.stem
+            
+            try:
+                with open(i18n_file, 'r', encoding='utf-8') as f:
+                    i18n_content = json.load(f)
+                    self.i18n_data[locale] = i18n_content
+                    logger.debug(f"成功加载 i18n 文件: {locale}")
+            except json.JSONDecodeError as e:
+                logger.error(f"i18n 文件 JSON 格式错误 {i18n_file}: {e}", exc_info=True)
+            except Exception as e:
+                logger.error(f"读取 i18n 文件失败 {i18n_file}: {e}", exc_info=True)
+    
+    def _get_i18n_labels(self, schema_info: SchemaInfo) -> Dict[str, str]:
+        """
+        从所有 i18n 文件中获取 label 翻译。
+        
+        Args:
+            schema_info: Schema 信息对象
         
         Returns:
-            schema 名称列表，格式为 {group}.{category}.{title}
+            字典，key 为 locale（如 "zh_CN"），value 为对应语言的 label
+        """
+        self._load_i18n()
+        
+        result = {}
+        
+        if not self.i18n_data:
+            return result
+        
+        # i18n 文件中的 key 基于文件名（去掉 .json 扩展名）
+        # 例如：abnormal_behavior_access_anomaly.json -> abnormal_behavior_access_anomaly
+        file_stem = schema_info.file_path.stem
+        
+        # 遍历所有已加载的 i18n 数据
+        for locale, i18n_content in self.i18n_data.items():
+            classes = i18n_content.get("classes", {})
+            class_info = classes.get(file_stem, {})
+            label = class_info.get("label", "")
+            if label:
+                result[locale] = label
+        
+        return result
+    
+    def list_schema_names(self) -> List[Dict[str, Any]]:
+        """
+        获取所有 schema 的名称列表，包含 title、label 和所有可用的 i18n 翻译。
+        
+        Returns:
+            schema 信息列表，每个元素包含：
+            - title: schema 名称，格式为 {group}.{category}.{title}
+            - label: schema 的英文标签（来自 schema 文件）
+            - label_{locale}: schema 的各语言标签（动态生成，如 label_zh_CN, label_en_US 等）
         """
         self.load_all()
         
-        return sorted([
-            f"{info.group}.{info.category}.{info.title}"
-            for info in self.schema_files.values()
-        ])
+        result = []
+        for info in self.schema_files.values():
+            title = f"{info.group}.{info.category}.{info.title}"
+            label = info.label
+            
+            # 获取所有语言的翻译
+            i18n_labels = self._get_i18n_labels(info)
+            
+            # 构建返回对象
+            schema_item = {
+                "title": title,
+                "label": label
+            }
+            
+            # 动态添加各语言的 label，key 格式为 label_{locale}
+            for locale, translated_label in i18n_labels.items():
+                schema_item[f"label_{locale}"] = translated_label
+            
+            result.append(schema_item)
+        
+        # 按 title 排序
+        return sorted(result, key=lambda x: x["title"])
     
     def describe_schemas(self, schema_names: List[str]) -> Dict[str, str]:
         """
